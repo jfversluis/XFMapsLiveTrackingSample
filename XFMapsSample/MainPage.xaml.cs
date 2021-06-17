@@ -8,56 +8,57 @@ namespace XFMapsSample
 {
     public partial class MainPage : ContentPage
     {
-        private Trackpoint[] points;
-        private Trackpoint[] points1;
-        private Pin pin = new Pin
+        private readonly Trackpoint[] pointsRoute1;
+        private readonly Trackpoint[] pointsRoute2;
+
+        private Pin pinRoute1 = new Pin
         {
-            Label = "Other user location"
+            Label = "Other users location"
         };
 
-        private Pin pin1 = new Pin
+        private Pin pinRoute2 = new Pin
         {
-            Label = "Other user location"
+            Label = "Other users location"
         };
 
         public MainPage()
         {
             InitializeComponent();
 
-            using (var stream = Embedded.Load("route.tcx"))
-            {
-                var serializer = new XmlSerializer(typeof(TrainingCenterDatabase));
-                var @object = serializer.Deserialize(stream);
+            pointsRoute1 = GetTrackingRoute("route.tcx");
+            pointsRoute2 = GetTrackingRoute("route1.tcx");
 
-                var database = (TrainingCenterDatabase)@object;
-                points = database.Activities.Activity[0].Lap[0].Track.ToArray();
-            }
+            myMap.Pins.Add(pinRoute1);
+            myMap.Pins.Add(pinRoute2);
+            var index = 0;
 
-            using (var stream = Embedded.Load("route1.tcx"))
-            {
-                var serializer = new XmlSerializer(typeof(TrainingCenterDatabase));
-                var @object = serializer.Deserialize(stream);
-
-                var database = (TrainingCenterDatabase)@object;
-                points1 = database.Activities.Activity[0].Lap[0].Track.ToArray();
-            }
-
-            var idx = 0;
-            myMap.Pins.Add(pin);
-            myMap.Pins.Add(pin1);
             Xamarin.Forms.Device.StartTimer(TimeSpan.FromSeconds(1), () =>
             {
-                pin.Position = new Xamarin.Forms.Maps.Position(points[idx].Position.LatitudeDegrees, points[idx].Position.LongitudeDegrees);
+                pinRoute1.Position = new Xamarin.Forms.Maps.Position(pointsRoute1[index].Position.LatitudeDegrees, pointsRoute1[index].Position.LongitudeDegrees);
 
-                pin1.Position = new Xamarin.Forms.Maps.Position(points1[idx].Position.LatitudeDegrees, points1[idx].Position.LongitudeDegrees);
+                pinRoute2.Position = new Xamarin.Forms.Maps.Position(pointsRoute2[index].Position.LatitudeDegrees, pointsRoute2[index].Position.LongitudeDegrees);
 
-                if (idx == 0)
-                    myMap.MoveToRegion(MapSpan.FromCenterAndRadius(pin.Position, Xamarin.Forms.Maps.Distance.FromKilometers(1)));
+                if (index == 0)
+                {
+                    myMap.MoveToRegion(MapSpan.FromCenterAndRadius(pinRoute1.Position, Xamarin.Forms.Maps.Distance.FromKilometers(1)));
+                }
 
-                idx+=5;
+                index += 5;
 
-                return points.Length >= idx;
+                return pointsRoute1.Length >= index;
             });
+        }
+
+        private Trackpoint[] GetTrackingRoute(string filename)
+        {
+            using (var stream = Embedded.Load(filename))
+            {
+                var serializer = new XmlSerializer(typeof(TrainingCenterDatabase));
+                var @object = serializer.Deserialize(stream);
+
+                var database = (TrainingCenterDatabase)@object;
+                return database.Activities.Activity[0].Lap[0].Track.ToArray();
+            }
         }
     }
 }
